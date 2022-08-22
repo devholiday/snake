@@ -13,6 +13,7 @@ function App() {
     const [scores, setScores] = useState(0);
     const [snake, setSnake] = useState([[2, 1], [3, 1]]);
     const [direction, setDirection] = useState('ArrowRight');
+    const [settings, setSettings] = useState({});
 
     const initLayerGrid = (w, h) => {
         const layer = [];
@@ -68,10 +69,15 @@ function App() {
         return layer;
     };
 
-    const startGame = (w, h) => {
+    const startGame = (data) => {
+        const {gridSize} = data;
+        const [w, h] = gridSize.split('x');
+
+        setSettings({...data, gridSize: [+w, +h]});
+
         setGrid(initLayerGrid(w, h));
         setMovement(initLayerMovement(w, h, snake));
-        setPoints(initLayerPoints(w, h, [...randomXY(10), 0]));
+        setPoints(initLayerPoints(w, h, [...randomXY(w, h), 0]));
     };
 
     const scorePointOfType = [1, 2, 3, 4, 5];
@@ -96,7 +102,7 @@ function App() {
                 if (point.enabled) {
                     setScores(prevState => prevState + getScorePointByType(point.type));
                     setPoints(prevState => {
-                        const [newX, newY] = randomXY(10);
+                        const [newX, newY] = randomXY(...settings.gridSize);
 
                         return produce(prevState, draftState => {
                             draftState[x][y]['enabled'] = false;
@@ -107,13 +113,29 @@ function App() {
                     newState.shift();
                 }
 
-                newState.push([x, y]);
+                const tailSnakeRemoving = prevState[0];
+                const tailSnake = newState[0];
+                const headSnake = newState[newState.length-1];
+                const headSnakeNew = [x, y];
 
-                setMovement(initLayerMovement(10, 10, newState));
+                newState.push(headSnakeNew);
+
+                setMovement(prevStateM => {
+                    prevStateM[headSnake[0]][headSnake[1]] = {state: true, tail: false, head: false};
+
+                    if (newState.length === prevState.length) {
+                        prevStateM[tailSnakeRemoving[0]][tailSnakeRemoving[1]] = {state: false, tail: false, head: false};
+                        prevStateM[tailSnake[0]][tailSnake[1]] =  {state: true, tail: true, head: false};
+                    }
+
+                    prevStateM[headSnakeNew[0]][headSnakeNew[1]] =  {state: true, tail: false, head: true};
+
+                    return prevStateM;
+                });
 
                 return newState;
             });
-        }, 300);
+        }, settings.snakeSpeed);
 
         return () => {
             clearInterval(intervalId);
@@ -146,9 +168,9 @@ function App() {
         };
     }, []);
 
-    const randomXY = max => {
-        const x = Math.floor(Math.random() * max);
-        const y = Math.floor(Math.random() * max);
+    const randomXY = (w, h) => {
+        const x = Math.floor(Math.random() * w);
+        const y = Math.floor(Math.random() * h);
 
         return [x, y];
     };
@@ -164,10 +186,8 @@ function App() {
             </div>
 
             {grid.length === 0 && (
-                <div>
-                    <Settings />
-
-                    <button onClick={() => startGame(10, 10)}>Начать игру</button>
+                <div className="settings">
+                    <Settings startGame={startGame} />
                 </div>
             )}
 
