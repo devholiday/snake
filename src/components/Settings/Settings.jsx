@@ -16,14 +16,14 @@ const Settings = ({startGame}) => {
                         <option value="30x15">30x15</option>
                         <option value="20x20">20x20</option>
                         <option value="10x10">10x10</option>
-                        <option value="5x5">5x5</option>
                     </select>
                 </div>
                 <div>
-                    <span>Borders (on|off)</span>
-                </div>
-                <div>
-                    <span>Timer (on|off)</span>
+                    <span>Border Grid</span>
+                    <select defaultValue="on" {...register("gridBorder")}>
+                        <option value="on">On</option>
+                        <option value="off">Off</option>
+                    </select>
                 </div>
                 <div>
                     <label>Speed snake (between 100 and 1000):</label>

@@ -1,7 +1,10 @@
 .App {
     width: 320px;
 }
-
+.App-header {
+    font-weight: 500;
+    font-size: 18px;
+}
 .layers {
     position: relative;
     display: inline-block;
@@ -10,35 +13,11 @@
 .layer {
     position: absolute;
     display: flex;
-    padding: 3px;
     flex-direction: row;
 }
-
 .cell {
     width: 29px;
     height: 29px;
     box-sizing: border-box;
-    /*display: inline-block;*/
     position: relative;
-}
-.layer.grid .cell {
-    border: 1px solid #000;
-}
-.layer.movement .cell.fill {
-    border: 0;
-    background-color: darkcyan;
-}
-.layer.points .cell.fill {
-    border: 0;
-}
-
-.cell .head {
-    position: absolute;
-}
-.cell .tail {
-    position: absolute;
-}
-
-.cell .point {
-    position: absolute;
 }

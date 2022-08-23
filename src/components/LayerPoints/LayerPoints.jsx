@@ -1,16 +1,19 @@
-const LayerPoints = ({layer}) => {
-    const scorePointOfType = [1, 2, 3, 4, 5];
-    const getScorePointByType = (type = 0) => {
-        return scorePointOfType[type];
-    };
+import style from "./LayerPoints.module.css";
 
-    return <div className="layer points">
+const LayerPoints = ({layer, getScorePoint}) => {
+    return <div className="layer">
         {layer.map((line, i) => (
-            <div className="line" key={i}>
+            <div className="column" key={i}>
                 {line.map((cell, j) => (
-                    <div className={cell.enabled ? "cell fill" : "cell"} key={i + j}>
+                    <div className={cell.enabled ? "cell "+style : "cell"} key={i + j}>
                         {cell.enabled &&
-                            <span className="point">{getScorePointByType(cell.type)}</span>}
+                            <div className={`${style.point} 
+                                ${getScorePoint(cell.type) === 1 && style.point1}
+                                ${getScorePoint(cell.type) === 2 && style.point2}
+                                ${getScorePoint(cell.type) === 3 && style.point3}
+                                ${getScorePoint(cell.type) === 4 && style.point4}
+                                ${getScorePoint(cell.type) === 5 && style.point5}`}>
+                                {getScorePoint(cell.type)}</div>}
                     </div>
                 ))}
             </div>

@@ -3,32 +3,17 @@ import {useEffect, useState} from "react";
 import produce from 'immer';
 import Settings from "./components/Settings/Settings";
 import LayerGrid from "./components/LayerGrid/LayerGrid";
-import LayerMovement from "./components/LayerMovement/LayerMovement";
 import LayerPoints from "./components/LayerPoints/LayerPoints";
 
 function App() {
     const [grid, setGrid] = useState([]);
-    const [movement, setMovement] = useState([]);
     const [points, setPoints] = useState([]);
+    const [snake, setSnake] = useState([]);
     const [scores, setScores] = useState(0);
-    const [snake, setSnake] = useState([[2, 1], [3, 1]]);
-    const [direction, setDirection] = useState('ArrowRight');
+    const [direction, setDirection] = useState(null);
     const [settings, setSettings] = useState({});
 
-    const initLayerGrid = (w, h) => {
-        const layer = [];
-        for (let i = 0; i < w; i++) {
-            const line = [];
-            for (let j = 0; j < h; j++) {
-                line.push({
-                    content: 0
-                });
-            }
-            layer.push(line);
-        }
-        return layer;
-    };
-    const initLayerMovement = (w, h, snake) => {
+    const initLayerGrid = (w, h, snake=[]) => {
         const layer = [];
         for (let i = 0; i < w; i++) {
             const line = [];
@@ -69,26 +54,32 @@ function App() {
         return layer;
     };
 
-    const startGame = (data) => {
-        const {gridSize} = data;
+    const startGame = data => {
+        const {gridSize, scoreValue} = data;
         const [w, h] = gridSize.split('x');
 
         setSettings({...data, gridSize: [+w, +h]});
 
-        setGrid(initLayerGrid(w, h));
-        setMovement(initLayerMovement(w, h, snake));
-        setPoints(initLayerPoints(w, h, [...randomXY(w, h), 0]));
+        setScores(0);
+        setSnake([[2, 1], [3, 1]]);
+        setDirection('ArrowRight');
+
+        setGrid(initLayerGrid(w, h, snake));
+        setPoints(initLayerPoints(w, h, [...randomXY(w, h), randomPoint(scoreValue)]));
+    };
+    const endGame = () => {
+        setGrid([]);
     };
 
-    const scorePointOfType = [1, 2, 3, 4, 5];
-    const getScorePointByType = (type = 0) => {
-        return scorePointOfType[type];
-    };
+    const scoresPoint = [1, 2, 3, 4, 5];
+    const getScorePoint = (type = 0) => scoresPoint[type];
 
     useEffect(() => {
         if (!grid.length) return;
 
-        const intervalId = setInterval(() => {
+        const {gridSize, gridBorder, snakeSpeed, scoreValue} = settings;
+
+        let timerId = setTimeout(function shift() {
             setSnake(prevState => {
                 let [x, y] = prevState[prevState.length - 1];
                 const newState = [...prevState];
@@ -98,15 +89,44 @@ function App() {
                 if (direction === 'ArrowLeft') x -= 1;
                 if (direction === 'ArrowRight') x += 1;
 
+                if (gridBorder === 'on') {
+                    if ((x < 0 || x >= gridSize[0]) || (y < 0 || y >= gridSize[1])) {
+                        endGame();
+                        return;
+                    }
+                }
+                if (gridBorder === 'off') {
+                    if (x < 0) {
+                        x = gridSize[0]-1;
+                    }
+                    if (x >= gridSize[0]) {
+                        x = 0;
+                    }
+                    if (y < 0) {
+                        y = gridSize[1]-1;
+                    }
+                    if (y >= gridSize[1]) {
+                        y = 0;
+                    }
+                }
+
+                const isCrossing = prevState.some(s => s[0] === x && s[1] === y);
+                if (isCrossing) {
+                    endGame();
+                    return;
+                }
+
                 const point = points[x][y];
                 if (point.enabled) {
-                    setScores(prevState => prevState + getScorePointByType(point.type));
                     setPoints(prevState => {
-                        const [newX, newY] = randomXY(...settings.gridSize);
+                        setScores(prevState => prevState + getScorePoint(point.type));
+
+                        const [newX, newY] = randomXY(...gridSize);
 
                         return produce(prevState, draftState => {
                             draftState[x][y]['enabled'] = false;
                             draftState[newX][newY]['enabled'] = true;
+                            draftState[newX][newY]['type'] = randomPoint(scoreValue);
                         });
                     });
                 } else {
@@ -120,7 +140,7 @@ function App() {
 
                 newState.push(headSnakeNew);
 
-                setMovement(prevStateM => {
+                setGrid(prevStateM => {
                     prevStateM[headSnake[0]][headSnake[1]] = {state: true, tail: false, head: false};
 
                     if (newState.length === prevState.length) {
@@ -135,11 +155,13 @@ function App() {
 
                 return newState;
             });
-        }, settings.snakeSpeed);
+
+            timerId = setTimeout(shift, snakeSpeed);
+        }, snakeSpeed);
 
         return () => {
-            clearInterval(intervalId);
-        }
+            clearTimeout(timerId);
+        };
     }, [grid, direction]);
     useEffect(() => {
         const allowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
@@ -174,16 +196,13 @@ function App() {
 
         return [x, y];
     };
+    const randomPoint = max => Math.floor(Math.random() * +(max-1));
 
     return (
         <div className="App">
-            <header className="App-header">
-                <span>Snake</span>
-            </header>
+            <header className="App-header"><span>Snake</span></header>
 
-            <div>
-                Scores: {scores}
-            </div>
+            <div>Scores: {scores}</div>
 
             {grid.length === 0 && (
                 <div className="settings">
@@ -194,8 +213,7 @@ function App() {
             {grid.length > 0 && (
                 <div className="layers">
                     <LayerGrid layer={grid} />
-                    <LayerMovement layer={movement} />
-                    <LayerPoints layer={points} />
+                    <LayerPoints layer={points} getScorePoint={getScorePoint} />
                 </div>
             )}
         </div>
